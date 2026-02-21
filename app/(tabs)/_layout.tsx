@@ -11,7 +11,7 @@ export default function TabLayout() {
       }}
     >
       <Tabs.Screen
-        name="index"
+        name="(home)"
         options={{
           title: "Home",
           tabBarLabel: () => null,
@@ -80,6 +80,13 @@ export default function TabLayout() {
               color={focused ? "black" : "gray"}
             />
           ),
+        }}
+      />
+      <Tabs.Screen
+        name="(post)/[username]/post/[postId]"
+        options={{
+          href: null,
+          tabBarLabel: () => null,
         }}
       />
     </Tabs>
