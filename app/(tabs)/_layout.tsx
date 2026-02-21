@@ -1,33 +1,85 @@
-import { Tabs } from 'expo-router';
-import React from 'react';
-
-import { HapticTab } from '@/components/haptic-tab';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Colors } from '@/constants/theme';
-import { useColorScheme } from '@/hooks/use-color-scheme';
+import { Tabs, useRouter } from "expo-router";
+import React from "react";
+import { Ionicons } from "@expo/vector-icons";
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-
+  const router = useRouter();
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
-      }}>
+      }}
+    >
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: "Home",
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name="home"
+              size={24}
+              color={focused ? "black" : "gray"}
+            />
+          ),
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="search"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: "Search",
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name="search"
+              size={24}
+              color={focused ? "black" : "gray"}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="add"
+        listeners={{
+          tabPress: (e) => {
+            e.preventDefault();
+            router.navigate("/modal");
+          },
+        }}
+        options={{
+          title: "Add",
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons name="add" size={24} color={focused ? "black" : "gray"} />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="activity"
+        options={{
+          title: "Activity",
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name="heart-outline"
+              size={24}
+              color={focused ? "black" : "gray"}
+            />
+          ),
+        }}
+      />
+      <Tabs.Screen
+        name="[username]"
+        options={{
+          title: "username",
+          tabBarLabel: () => null,
+          tabBarIcon: ({ focused }) => (
+            <Ionicons
+              name="person-outline"
+              size={24}
+              color={focused ? "black" : "gray"}
+            />
+          ),
         }}
       />
     </Tabs>
