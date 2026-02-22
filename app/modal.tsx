@@ -226,7 +226,9 @@ export default function Modal() {
           </Text>
         </Pressable>
         <Pressable disabled={!canPost} onPress={handlePost}>
-          <Text style={styles.postButtonText}>Post</Text>
+          <Text style={[styles.postButtonText, !canPost && styles.postButton]}>
+            Post
+          </Text>
         </Pressable>
       </View>
     </View>
@@ -411,6 +413,7 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   postButton: {
+    backgroundColor: "#ccc",
     paddingVertical: 8,
     paddingHorizontal: 18,
     borderRadius: 18,
