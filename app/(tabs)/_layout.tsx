@@ -1,7 +1,15 @@
 import { Tabs, useRouter } from "expo-router";
-import React, { useState } from "react";
+import React, { useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { Modal, Text, TouchableOpacity, View } from "react-native";
+import {
+  Animated,
+  Modal,
+  Pressable,
+  Text,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 
 export default function TabLayout() {
   const router = useRouter();
@@ -21,6 +29,7 @@ export default function TabLayout() {
         backBehavior="history"
         screenOptions={{
           headerShown: false,
+          tabBarButton: (props) => <AnimatedTabBarButton {...props} />,
         }}
       >
         <Tabs.Screen
@@ -151,3 +160,47 @@ export default function TabLayout() {
     </>
   );
 }
+
+const AnimatedTabBarButton = ({
+  children,
+  ref: _ref,
+  ...rest
+}: BottomTabBarButtonProps) => {
+  const scaleValue = useRef(new Animated.Value(1)).current;
+  const handlePressOut = () => {
+    Animated.sequence([
+      Animated.spring(scaleValue, {
+        toValue: 1.2,
+        useNativeDriver: true,
+        speed: 200,
+      }),
+      Animated.spring(scaleValue, {
+        toValue: 1,
+        useNativeDriver: true,
+        speed: 200,
+      }),
+    ]).start();
+  };
+
+  return (
+    <Pressable
+      {...rest}
+      onPressOut={handlePressOut}
+      style={[
+        {
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+        },
+      ]}
+      android_ripple={{
+        borderless: false,
+        radius: 0,
+      }}
+    >
+      <Animated.View style={{ transform: [{ scale: scaleValue }] }}>
+        {children}
+      </Animated.View>
+    </Pressable>
+  );
+};
