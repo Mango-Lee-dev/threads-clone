@@ -5,7 +5,7 @@ import { Modal, Text, TouchableOpacity, View } from "react-native";
 
 export default function TabLayout() {
   const router = useRouter();
-  const isLoggedIn = false;
+  const isLoggedIn = true;
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const openLoginModal = () => {
@@ -18,6 +18,7 @@ export default function TabLayout() {
   return (
     <>
       <Tabs
+        backBehavior="history"
         screenOptions={{
           headerShown: false,
         }}
@@ -100,8 +101,8 @@ export default function TabLayout() {
           name="[username]"
           listeners={() => ({
             tabPress: (e) => {
-              e.preventDefault();
               if (!isLoggedIn) {
+                e.preventDefault();
                 openLoginModal();
               }
             },
