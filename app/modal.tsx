@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -9,10 +9,14 @@ import {
   StyleSheet,
   Modal as RNModal,
   Pressable,
+  Alert,
+  Linking,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons, FontAwesome } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as Location from "expo-location";
+import * as ImagePicker from "expo-image-picker";
 
 interface Thread {
   id: string;
@@ -57,12 +61,32 @@ export default function Modal() {
   const [replyOption, setReplyOption] = useState("Anyone");
   const [isDropdownVisible, setIsDropdownVisible] = useState(false);
   const [isPosting, setIsPosting] = useState(false);
-
   const replyOptions = ["Anyone", "Profiles you follow", "Mentioned only"];
 
-  const handleCancel = () => {};
+  const handleCancel = () => {
+    if (threads.some((t) => t.text.trim().length > 0 || t.imageUris.length > 0)) {
+      Alert.alert("Discard thread?", "You have unsaved changes.", [
+        { text: "Keep editing", style: "cancel" },
+        { text: "Discard", style: "destructive", onPress: () => router.back() },
+      ]);
+    } else {
+      router.back();
+    }
+  };
 
-  const handlePost = () => {};
+  const handlePost = async () => {
+    if (!canPost || isPosting) return;
+    setIsPosting(true);
+    try {
+      // TODO: 실제 API 호출 구현
+      console.log("Posting threads:", threads);
+      router.back();
+    } catch (error) {
+      Alert.alert("Error", "Failed to post thread. Please try again.");
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   const updateThreadText = (id: string, text: string) => {
     setThreads((prevThreads) =>
@@ -73,21 +97,112 @@ export default function Modal() {
   };
 
   const canAddThread = (threads.at(-1)?.text.trim().length ?? 0) > 0;
-  const canPost = threads.every((thread) => thread.text.trim().length > 0);
+  const canPost = threads.some((thread) => thread.text.trim().length > 0 || thread.imageUris.length > 0);
 
-  const addImageToThread = (id: string, uri: string) => {};
+  const addImageToThread = (id: string, uri: string) => {
+    setThreads((prevThreads) =>
+      prevThreads.map((thread) =>
+        thread.id === id
+          ? { ...thread, imageUris: [...thread.imageUris, uri] }
+          : thread,
+      ),
+    );
+  };
 
-  const addLocationToThread = (id: string, location: [number, number]) => {};
+  const removeThread = (id: string) => {
+    setThreads((prevThreads) => prevThreads.filter((thread) => thread.id !== id));
+  };
 
-  const removeThread = (id: string) => {};
+  const pickImage = async (id: string) => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "Please grant photo library permission to add images.",
+        [
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+          { text: "Cancel", style: "cancel" },
+        ],
+      );
+      return;
+    }
 
-  const pickImage = async (id: string) => {};
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      quality: 0.8,
+    });
 
-  const takePhoto = async (id: string) => {};
+    if (!result.canceled && result.assets) {
+      result.assets.forEach((asset) => {
+        addImageToThread(id, asset.uri);
+      });
+    }
+  };
 
-  const removeImageFromThread = (id: string, uriToRemove: string) => {};
+  const takePhoto = async (id: string) => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "Please grant camera permission to take photos.",
+        [
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+          { text: "Cancel", style: "cancel" },
+        ],
+      );
+      return;
+    }
 
-  const getMyLocation = async (id: string) => {};
+    const result = await ImagePicker.launchCameraAsync({
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      addImageToThread(id, result.assets[0].uri);
+    }
+  };
+
+  const removeImageFromThread = (id: string, uriToRemove: string) => {
+    setThreads((prevThreads) =>
+      prevThreads.map((thread) =>
+        thread.id === id
+          ? { ...thread, imageUris: thread.imageUris.filter((uri) => uri !== uriToRemove) }
+          : thread,
+      ),
+    );
+  };
+
+  const getMyLocation = async (id: string) => {
+    const { status } = await Location.requestForegroundPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permission required",
+        "Please grant location permission to use this feature.",
+        [
+          { text: "Open Settings", onPress: () => Linking.openSettings() },
+          { text: "Cancel", style: "cancel" },
+        ],
+      );
+      return;
+    }
+
+    try {
+      const location = await Location.getCurrentPositionAsync();
+      setThreads((prevThreads) =>
+        prevThreads.map((thread) =>
+          thread.id === id
+            ? {
+                ...thread,
+                location: [location.coords.latitude, location.coords.longitude],
+              }
+            : thread,
+        ),
+      );
+    } catch (error) {
+      Alert.alert("Error", "Failed to get location. Please try again.");
+    }
+  };
 
   const renderThreadItem = ({
     item,
@@ -225,12 +340,61 @@ export default function Modal() {
             {replyOption} can reply & quote
           </Text>
         </Pressable>
-        <Pressable disabled={!canPost} onPress={handlePost}>
-          <Text style={[styles.postButtonText, !canPost && styles.postButton]}>
-            Post
+        <Pressable
+          disabled={!canPost || isPosting}
+          onPress={handlePost}
+          style={[
+            styles.postButton,
+            canPost && !isPosting && styles.postButtonActive,
+          ]}
+        >
+          <Text
+            style={[
+              styles.postButtonText,
+              canPost && !isPosting && styles.postButtonTextActive,
+            ]}
+          >
+            {isPosting ? "Posting..." : "Post"}
           </Text>
         </Pressable>
       </View>
+
+      <RNModal
+        visible={isDropdownVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setIsDropdownVisible(false)}
+      >
+        <Pressable
+          style={styles.modalOverlay}
+          onPress={() => setIsDropdownVisible(false)}
+        >
+          <View style={styles.dropdownContainer}>
+            {replyOptions.map((option) => (
+              <Pressable
+                key={option}
+                style={[
+                  styles.dropdownOption,
+                  replyOption === option && styles.selectedOption,
+                ]}
+                onPress={() => {
+                  setReplyOption(option);
+                  setIsDropdownVisible(false);
+                }}
+              >
+                <Text
+                  style={[
+                    styles.dropdownOptionText,
+                    replyOption === option && styles.selectedOptionText,
+                  ]}
+                >
+                  {option}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Pressable>
+      </RNModal>
     </View>
   );
 }
@@ -413,49 +577,33 @@ const styles = StyleSheet.create({
     color: "#555",
   },
   postButton: {
-    backgroundColor: "#ccc",
     paddingVertical: 8,
     paddingHorizontal: 18,
     borderRadius: 18,
+    backgroundColor: "#e0e0e0",
   },
-  postButtonLight: {
-    backgroundColor: "black",
-  },
-  postButtonDark: {
-    backgroundColor: "white",
-  },
-  postButtonDisabledLight: {
-    backgroundColor: "#ccc",
-  },
-  postButtonDisabledDark: {
-    backgroundColor: "#555",
+  postButtonActive: {
+    backgroundColor: "#000",
   },
   postButtonText: {
     fontSize: 15,
     fontWeight: "600",
+    color: "#999",
   },
-  postButtonTextLight: {
-    color: "white",
-  },
-  postButtonTextDark: {
-    color: "black",
+  postButtonTextActive: {
+    color: "#fff",
   },
   modalOverlay: {
     flex: 1,
     backgroundColor: "rgba(0, 0, 0, 0.4)",
     justifyContent: "flex-end",
+    paddingBottom: 100,
   },
   dropdownContainer: {
-    width: 200,
-    borderRadius: 10,
-    marginHorizontal: 10,
+    marginHorizontal: 16,
+    borderRadius: 14,
     overflow: "hidden",
-  },
-  dropdownContainerLight: {
-    backgroundColor: "white",
-  },
-  dropdownContainerDark: {
-    backgroundColor: "#101010",
+    backgroundColor: "#fff",
   },
   dropdownOption: {
     paddingVertical: 15,
