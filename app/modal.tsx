@@ -64,7 +64,9 @@ export default function Modal() {
   const replyOptions = ["Anyone", "Profiles you follow", "Mentioned only"];
 
   const handleCancel = () => {
-    if (threads.some((t) => t.text.trim().length > 0 || t.imageUris.length > 0)) {
+    if (
+      threads.some((t) => t.text.trim().length > 0 || t.imageUris.length > 0)
+    ) {
       Alert.alert("Discard thread?", "You have unsaved changes.", [
         { text: "Keep editing", style: "cancel" },
         { text: "Discard", style: "destructive", onPress: () => router.back() },
@@ -97,7 +99,9 @@ export default function Modal() {
   };
 
   const canAddThread = (threads.at(-1)?.text.trim().length ?? 0) > 0;
-  const canPost = threads.some((thread) => thread.text.trim().length > 0 || thread.imageUris.length > 0);
+  const canPost = threads.some(
+    (thread) => thread.text.trim().length > 0 || thread.imageUris.length > 0,
+  );
 
   const addImageToThread = (id: string, uri: string) => {
     setThreads((prevThreads) =>
@@ -110,7 +114,9 @@ export default function Modal() {
   };
 
   const removeThread = (id: string) => {
-    setThreads((prevThreads) => prevThreads.filter((thread) => thread.id !== id));
+    setThreads((prevThreads) =>
+      prevThreads.filter((thread) => thread.id !== id),
+    );
   };
 
   const pickImage = async (id: string) => {
@@ -128,7 +134,7 @@ export default function Modal() {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
+      mediaTypes: ["images", "livePhotos", "videos"],
       allowsMultipleSelection: true,
       quality: 0.8,
     });
@@ -167,7 +173,10 @@ export default function Modal() {
     setThreads((prevThreads) =>
       prevThreads.map((thread) =>
         thread.id === id
-          ? { ...thread, imageUris: thread.imageUris.filter((uri) => uri !== uriToRemove) }
+          ? {
+              ...thread,
+              imageUris: thread.imageUris.filter((uri) => uri !== uriToRemove),
+            }
           : thread,
       ),
     );
