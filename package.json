@@ -1,6 +1,6 @@
 {
   "name": "threads",
-  "main": "expo-router/entry",
+  "main": "index.ts",
   "version": "1.0.0",
   "scripts": {
     "start": "expo start",
@@ -8,6 +8,7 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "main": "index.ts",
     "lint": "expo lint"
   },
   "dependencies": {
@@ -31,6 +32,8 @@
     "expo-symbols": "~1.0.8",
     "expo-system-ui": "~6.0.9",
     "expo-web-browser": "~15.0.10",
+    "mirage": "^0.0.7",
+    "miragejs": "^0.1.48",
     "react": "19.1.0",
     "react-dom": "19.1.0",
     "react-native": "0.81.5",

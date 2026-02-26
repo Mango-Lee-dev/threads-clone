@@ -13,7 +13,7 @@ import { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
 
 export default function TabLayout() {
   const router = useRouter();
-  const isLoggedIn = true;
+  const isLoggedIn = false;
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const openLoginModal = () => {
@@ -22,6 +22,11 @@ export default function TabLayout() {
 
   const closeLoginModal = () => {
     setIsLoginModalOpen(false);
+  };
+
+  const toLoginPage = () => {
+    router.push("/login");
+    closeLoginModal();
   };
   return (
     <>
@@ -150,7 +155,12 @@ export default function TabLayout() {
           }}
         >
           <View style={{ backgroundColor: "white", padding: 20 }}>
-            <Text>Login</Text>
+            <Pressable
+              onPress={toLoginPage}
+              style={{ backgroundColor: "blue", padding: 10, borderRadius: 5 }}
+            >
+              <Text style={{ color: "white" }}>Login</Text>
+            </Pressable>
             <TouchableOpacity onPress={closeLoginModal}>
               <Ionicons name="close" size={24} color="black" />
             </TouchableOpacity>
