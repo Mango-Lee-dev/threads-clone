@@ -64,7 +64,8 @@
           "savePhotosPermission": "The app needs access to your photos to let you save them to your camera roll.",
           "isAccessMediaLocationEnabled": true
         }
-      ]
+      ],
+      "expo-secure-store"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,6 +1,8 @@
 import { Redirect, useRouter } from "expo-router";
 import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Login() {
   const isLoggedIn = false;
@@ -20,6 +22,10 @@ export default function Login() {
         if (data.error) {
           Alert.alert("Error", data.error);
         } else {
+          console.log(data);
+          SecureStore.setItemAsync("accessToken", data.accessToken);
+          SecureStore.setItemAsync("refreshToken", data.refreshToken);
+          AsyncStorage.setItem("user", JSON.stringify(data.user));
           router.navigate("/");
         }
       });
