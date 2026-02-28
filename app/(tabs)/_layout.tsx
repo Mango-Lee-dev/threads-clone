@@ -1,5 +1,5 @@
 import { Tabs, useRouter } from "expo-router";
-import React, { useRef, useState } from "react";
+import React, { useContext, useRef, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
   Animated,
@@ -10,10 +10,12 @@ import {
   View,
 } from "react-native";
 import { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
+import { AuthContext } from "../_layout";
 
 export default function TabLayout() {
   const router = useRouter();
-  const isLoggedIn = false;
+  const { user, onLogin, onLogout } = useContext(AuthContext);
+  const isLoggedIn = !!user;
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const openLoginModal = () => {
