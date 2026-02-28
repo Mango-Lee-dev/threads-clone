@@ -81,7 +81,6 @@ export default function Modal() {
     setIsPosting(true);
     try {
       // TODO: 실제 API 호출 구현
-      console.log("Posting threads:", threads);
       router.back();
     } catch (error) {
       Alert.alert("Error", "Failed to post thread. Please try again.");

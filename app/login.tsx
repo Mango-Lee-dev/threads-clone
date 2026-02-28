@@ -1,37 +1,19 @@
 import { Redirect, useRouter } from "expo-router";
-import { View, Text, Pressable, StyleSheet, Alert } from "react-native";
+import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import * as SecureStore from "expo-secure-store";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useContext } from "react";
+import { AuthContext } from "./_layout";
 
 export default function Login() {
-  const isLoggedIn = false;
-  const insects = useSafeAreaInsets();
+  const insets = useSafeAreaInsets();
   const router = useRouter();
+  const { user, onLogin } = useContext(AuthContext);
 
-  const onLogin = () => {
-    fetch("/login", {
-      method: "POST",
-      body: JSON.stringify({
-        username: "wtlee",
-        password: "1234",
-      }),
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        if (data.error) {
-          Alert.alert("Error", data.error);
-        } else {
-          console.log(data);
-          SecureStore.setItemAsync("accessToken", data.accessToken);
-          SecureStore.setItemAsync("refreshToken", data.refreshToken);
-          AsyncStorage.setItem("user", JSON.stringify(data.user));
-          router.navigate("/");
-        }
-      });
+  const handleLogin = async () => {
+    await onLogin("wtlee", "1234");
   };
 
-  if (isLoggedIn) {
+  if (user) {
     return <Redirect href="/(tabs)" />;
   }
 
@@ -39,14 +21,14 @@ export default function Login() {
     <View
       style={{
         flex: 1,
-        paddingTop: insects.top,
-        paddingBottom: insects.bottom,
+        paddingTop: insets.top,
+        paddingBottom: insets.bottom,
       }}
     >
       <Pressable onPress={() => router.back()}>
         <Text>Back</Text>
       </Pressable>
-      <Pressable onPress={onLogin} style={styles.loginButton}>
+      <Pressable onPress={handleLogin} style={styles.loginButton}>
         <Text>Login</Text>
       </Pressable>
     </View>
@@ -61,8 +43,5 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
-  },
-  loginButtonText: {
-    color: "white",
   },
 });

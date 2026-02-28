@@ -2,21 +2,27 @@ import { usePathname, useRouter } from "expo-router";
 import { Text, TouchableOpacity, View, StyleSheet, Image } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { BlurView } from "expo-blur";
+import { useContext, useState } from "react";
+import { AuthContext } from "@/app/_layout";
+import SideMenu from "@/components/side-menu";
 
 export default function Index() {
   const router = useRouter();
   const pathname = usePathname();
-  const insects = useSafeAreaInsets();
-  const isLoggedIn = true;
+  const insets = useSafeAreaInsets();
+  const { user, onLogin, onLogout } = useContext(AuthContext);
+  const isLoggedIn = !!user;
+
+  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   return (
     <View
-      style={
-        (styles.container,
+      style={[
+        styles.container,
         {
-          paddingTop: insects.top,
-          paddingBottom: insects.bottom,
-        })
-      }
+          paddingTop: insets.top,
+          paddingBottom: insets.bottom,
+        },
+      ]}
     >
       <BlurView style={styles.header}>
         <Image
@@ -26,10 +32,18 @@ export default function Index() {
         {!isLoggedIn && (
           <TouchableOpacity
             style={styles.loginButton}
-            onPress={() => router.navigate("/login")}
+            onPress={() => {
+              setIsLoginModalOpen(true);
+            }}
           >
             <Text style={styles.loginButtonText}>로그인</Text>
           </TouchableOpacity>
+        )}
+        {isLoginModalOpen && (
+          <SideMenu
+            isVisible={isLoginModalOpen}
+            onClose={() => setIsLoginModalOpen(false)}
+          />
         )}
       </BlurView>
       {isLoggedIn && (
@@ -43,7 +57,7 @@ export default function Index() {
           </View>
           <View style={styles.tab}>
             <TouchableOpacity onPress={() => router.push("/following")}>
-              <Text style={{ color: pathname === "/" ? "black" : "red" }}>
+              <Text style={{ color: pathname === "/following" ? "red" : "black" }}>
                 Following
               </Text>
             </TouchableOpacity>
@@ -79,7 +93,6 @@ const styles = StyleSheet.create({
     backgroundColor: "black",
     paddingHorizontal: 20,
     paddingVertical: 10,
-    padding: 10,
     borderRadius: 10,
   },
   loginButtonText: {
