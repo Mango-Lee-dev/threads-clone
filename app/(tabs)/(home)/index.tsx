@@ -1,19 +1,9 @@
-import { usePathname, useRouter } from "expo-router";
-import { Text, TouchableOpacity, View, StyleSheet, Image } from "react-native";
+import { View, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { BlurView } from "expo-blur";
-import { useContext, useState } from "react";
-import { AuthContext } from "@/app/_layout";
-import SideMenu from "@/components/side-menu";
 
 export default function Index() {
-  const router = useRouter();
-  const pathname = usePathname();
   const insets = useSafeAreaInsets();
-  const { user, onLogin, onLogout } = useContext(AuthContext);
-  const isLoggedIn = !!user;
 
-  const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   return (
     <View
       style={[
@@ -23,48 +13,7 @@ export default function Index() {
           paddingBottom: insets.bottom,
         },
       ]}
-    >
-      <BlurView style={styles.header}>
-        <Image
-          source={require("@/assets/images/react-logo.png")}
-          style={styles.headerLogo}
-        />
-        {!isLoggedIn && (
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={() => {
-              setIsLoginModalOpen(true);
-            }}
-          >
-            <Text style={styles.loginButtonText}>로그인</Text>
-          </TouchableOpacity>
-        )}
-        {isLoginModalOpen && (
-          <SideMenu
-            isVisible={isLoginModalOpen}
-            onClose={() => setIsLoginModalOpen(false)}
-          />
-        )}
-      </BlurView>
-      {isLoggedIn && (
-        <View style={styles.tabContainer}>
-          <View style={styles.tab}>
-            <TouchableOpacity onPress={() => router.push("/")}>
-              <Text style={{ color: pathname === "/" ? "red" : "black" }}>
-                For you
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.tab}>
-            <TouchableOpacity onPress={() => router.push("/following")}>
-              <Text style={{ color: pathname === "/following" ? "red" : "black" }}>
-                Following
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
-    </View>
+    ></View>
   );
 }
 
