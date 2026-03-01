@@ -39,7 +39,11 @@ export default function TabLayout() {
   const isOwnProfile = isLoggedIn && user?.id === username?.slice(1);
   const [profile, setProfile] = useState<any>(null);
 
+  console.log(user);
+
   useEffect(() => {
+    if (!username) return;
+
     if (username !== `@${user?.id}`) {
       setProfile(null);
       fetch(`/users/${username}`)
@@ -106,107 +110,109 @@ export default function TabLayout() {
           onClose={() => setIsSideMenuOpen(false)}
         />
       </View>
-      <View style={styles.profile}>
-        <View style={styles.profileHeader}>
-          <Image
-            source={{ uri: profile?.profileImageUrl }}
-            style={styles.profileAvatar}
-          />
-          <Text
-            style={[
-              styles.profileName,
-              colorScheme === "dark"
-                ? styles.profileNameDark
-                : styles.profileNameLight,
-            ]}
-          >
-            {profile?.name}
-          </Text>
-          <Text
-            style={[
-              { marginBottom: 16 },
-              colorScheme === "dark"
-                ? styles.profileTextDark
-                : styles.profileTextLight,
-            ]}
-          >
-            {profile?.id}
-          </Text>
-          <Text
-            style={[
-              colorScheme === "dark"
-                ? styles.profileTextDark
-                : styles.profileTextLight,
-            ]}
-          >
-            {profile?.description}
-          </Text>
-        </View>
-        <View style={styles.profileActions}>
-          {isOwnProfile ? (
-            <Pressable
-              style={[
-                styles.actionButton,
-                colorScheme === "dark"
-                  ? styles.actionButtonDark
-                  : styles.actionButtonLight,
-              ]}
-              onPress={handleOpenEditModal}
-            >
-              <Text
-                style={[
-                  styles.actionButtonText,
-                  colorScheme === "dark"
-                    ? styles.actionButtonTextDark
-                    : styles.actionButtonTextLight,
-                ]}
-              >
-                Edit profile
-              </Text>
-            </Pressable>
-          ) : (
-            <Pressable
-              style={[
-                styles.actionButton,
-                colorScheme === "dark"
-                  ? styles.actionButtonDark
-                  : styles.actionButtonLight,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.actionButtonText,
-                  colorScheme === "dark"
-                    ? styles.actionButtonTextDark
-                    : styles.actionButtonTextLight,
-                ]}
-              >
-                Follow
-              </Text>
-            </Pressable>
-          )}
-          <Pressable
-            style={[
-              styles.actionButton,
-              colorScheme === "dark"
-                ? styles.actionButtonDark
-                : styles.actionButtonLight,
-            ]}
-            onPress={handleShareProfile}
-          >
+      {profile && (
+        <View style={styles.profile}>
+          <View style={styles.profileHeader}>
+            <Image
+              source={{ uri: profile?.profileImageUrl }}
+              style={styles.profileAvatar}
+            />
             <Text
               style={[
-                styles.actionButtonText,
+                styles.profileName,
                 colorScheme === "dark"
-                  ? styles.actionButtonTextDark
-                  : styles.actionButtonTextLight,
+                  ? styles.profileNameDark
+                  : styles.profileNameLight,
               ]}
             >
-              Share profile
+              {profile?.name}
             </Text>
-          </Pressable>
+            <Text
+              style={[
+                { marginBottom: 16 },
+                colorScheme === "dark"
+                  ? styles.profileTextDark
+                  : styles.profileTextLight,
+              ]}
+            >
+              {profile?.id}
+            </Text>
+            <Text
+              style={[
+                colorScheme === "dark"
+                  ? styles.profileTextDark
+                  : styles.profileTextLight,
+              ]}
+            >
+              {profile?.description}
+            </Text>
+          </View>
+          <View style={styles.profileActions}>
+            {isOwnProfile ? (
+              <Pressable
+                style={[
+                  styles.actionButton,
+                  colorScheme === "dark"
+                    ? styles.actionButtonDark
+                    : styles.actionButtonLight,
+                ]}
+                onPress={handleOpenEditModal}
+              >
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    colorScheme === "dark"
+                      ? styles.actionButtonTextDark
+                      : styles.actionButtonTextLight,
+                  ]}
+                >
+                  Edit profile
+                </Text>
+              </Pressable>
+            ) : (
+              <Pressable
+                style={[
+                  styles.actionButton,
+                  colorScheme === "dark"
+                    ? styles.actionButtonDark
+                    : styles.actionButtonLight,
+                ]}
+              >
+                <Text
+                  style={[
+                    styles.actionButtonText,
+                    colorScheme === "dark"
+                      ? styles.actionButtonTextDark
+                      : styles.actionButtonTextLight,
+                  ]}
+                >
+                  Follow
+                </Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[
+                styles.actionButton,
+                colorScheme === "dark"
+                  ? styles.actionButtonDark
+                  : styles.actionButtonLight,
+              ]}
+              onPress={handleShareProfile}
+            >
+              <Text
+                style={[
+                  styles.actionButtonText,
+                  colorScheme === "dark"
+                    ? styles.actionButtonTextDark
+                    : styles.actionButtonTextLight,
+                ]}
+              >
+                Share profile
+              </Text>
+            </Pressable>
+          </View>
         </View>
-      </View>
+      )}
 
       <MaterialTopTabs
         screenOptions={{
