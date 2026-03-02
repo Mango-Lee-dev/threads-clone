@@ -1,8 +1,15 @@
-import { View, StyleSheet } from "react-native";
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  useColorScheme,
+  Text,
+} from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Index() {
   const insets = useSafeAreaInsets();
+  const colorScheme = useColorScheme();
 
   return (
     <View
@@ -13,7 +20,43 @@ export default function Index() {
           paddingBottom: insets.bottom,
         },
       ]}
-    ></View>
+    >
+      <View>
+        <TouchableOpacity>
+          <Text
+            style={
+              colorScheme === "dark"
+                ? styles.textDefaultDark
+                : styles.textDefaultLight
+            }
+          >
+            게시글 1
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Text
+            style={
+              colorScheme === "dark"
+                ? styles.textDefaultDark
+                : styles.textDefaultLight
+            }
+          >
+            게시글 2
+          </Text>
+        </TouchableOpacity>
+        <TouchableOpacity>
+          <Text
+            style={
+              colorScheme === "dark"
+                ? styles.textDefaultDark
+                : styles.textDefaultLight
+            }
+          >
+            게시글 3
+          </Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 
@@ -46,5 +89,11 @@ const styles = StyleSheet.create({
   },
   loginButtonText: {
     color: "white",
+  },
+  textDefaultDark: {
+    color: "white",
+  },
+  textDefaultLight: {
+    color: "black",
   },
 });
