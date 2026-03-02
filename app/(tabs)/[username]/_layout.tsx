@@ -39,8 +39,6 @@ export default function TabLayout() {
   const isOwnProfile = isLoggedIn && user?.id === username?.slice(1);
   const [profile, setProfile] = useState<any>(null);
 
-  console.log(user);
-
   useEffect(() => {
     if (!username) return;
 
@@ -63,11 +61,10 @@ export default function TabLayout() {
   const handleCloseEditModal = () => setIsEditModalVisible(false);
 
   const handleShareProfile = async () => {
-    console.log("share profile");
     try {
       await Share.share({
-        message: `thread://@${username}`,
-        url: `thread://@${username}`,
+        message: `threads://@${username}`,
+        url: `threads://@${username}`,
       });
     } catch (error) {
       console.log(error);

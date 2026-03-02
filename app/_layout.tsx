@@ -1,6 +1,6 @@
 import { Stack, useRouter } from "expo-router";
 import { createContext, useState } from "react";
-import { Alert } from "react-native";
+import { Alert, StatusBar, useColorScheme } from "react-native";
 import "react-native-reanimated";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -22,7 +22,7 @@ export const AuthContext = createContext({
 export default function RootLayout() {
   const [user, setUser] = useState(null);
   const router = useRouter();
-
+  const colorScheme = useColorScheme();
   const onLogin = async (username: string, password: string) => {
     try {
       const res = await fetch("/login", {
@@ -58,6 +58,10 @@ export default function RootLayout() {
   };
   return (
     <AuthContext value={{ user, onLogin, onLogout }}>
+      <StatusBar
+        backgroundColor={colorScheme === "dark" ? "#000" : "#fff"}
+        barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
+      />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
         <Stack.Screen
