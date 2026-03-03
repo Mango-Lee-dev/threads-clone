@@ -57,13 +57,17 @@ function AnimatedSplashScreen({
     if (!isAppReady) return;
     Animated.timing(animation, {
       toValue: 0,
-      duration: 1000,
+      duration: 2000,
       useNativeDriver: true,
     }).start(() => {
       setIsSplashAnimationComplete(true);
     });
   }, [isAppReady, animation]);
 
+  const rotateValue = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: ["0deg", "360deg"],
+  });
   return (
     <View
       style={{
@@ -93,7 +97,7 @@ function AnimatedSplashScreen({
               height: Constants.expoConfig?.splash?.imageWidth ?? 200,
               opacity: animation,
               resizeMode: "contain",
-              transform: [{ scale: animation }],
+              transform: [{ scale: animation }, { rotate: rotateValue }],
             }}
             onLoadEnd={onImageLoaded}
             fadeDuration={0}
