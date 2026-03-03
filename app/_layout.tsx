@@ -1,9 +1,18 @@
 import { Stack, useRouter } from "expo-router";
-import { createContext, useState } from "react";
-import { Alert, StatusBar, useColorScheme } from "react-native";
+import { createContext, useEffect, useRef, useState } from "react";
+import {
+  Alert,
+  Animated,
+  StatusBar,
+  StyleSheet,
+  useColorScheme,
+  View,
+} from "react-native";
 import "react-native-reanimated";
 import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { Asset } from "expo-asset";
+import Constants from "expo-constants";
 
 export const unstable_settings = {
   anchor: "(tabs)",
@@ -19,10 +28,106 @@ export const AuthContext = createContext({
   onLogout: async () => {},
 });
 
-export default function RootLayout() {
-  const [user, setUser] = useState(null);
+function AnimatedSplashScreen({
+  image,
+  children,
+  onReady,
+}: {
+  image: number;
+  children: React.ReactNode;
+  onReady: () => Promise<void>;
+}) {
+  const [isAppReady, setIsAppReady] = useState(false);
+  const [isSplashAnimationComplete, setIsSplashAnimationComplete] =
+    useState(false);
+
+  const animation = useRef(new Animated.Value(1)).current;
+
+  const onImageLoaded = async () => {
+    try {
+      await onReady();
+    } catch (error) {
+      // 에러 무시
+    } finally {
+      setIsAppReady(true);
+    }
+  };
+
+  useEffect(() => {
+    if (!isAppReady) return;
+    Animated.timing(animation, {
+      toValue: 0,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start(() => {
+      setIsSplashAnimationComplete(true);
+    });
+  }, [isAppReady, animation]);
+
+  return (
+    <View
+      style={{
+        flex: 1,
+      }}
+    >
+      {isAppReady && children}
+      {!isSplashAnimationComplete && (
+        <Animated.View
+          pointerEvents="none"
+          style={[
+            {
+              ...StyleSheet.absoluteFillObject,
+              flex: 1,
+              justifyContent: "center",
+              alignItems: "center",
+              backgroundColor:
+                Constants.expoConfig?.splash?.backgroundColor ?? "#ffffff",
+              opacity: animation,
+            },
+          ]}
+        >
+          <Animated.Image
+            source={image}
+            style={{
+              width: Constants.expoConfig?.splash?.imageWidth ?? 200,
+              height: Constants.expoConfig?.splash?.imageWidth ?? 200,
+              opacity: animation,
+              resizeMode: "contain",
+              transform: [{ scale: animation }],
+            }}
+            onLoadEnd={onImageLoaded}
+            fadeDuration={0}
+          />
+        </Animated.View>
+      )}
+    </View>
+  );
+}
+
+function AnimatedAppLoader({
+  children,
+  image,
+}: {
+  children: React.ReactNode;
+  image: number;
+}) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isImageLoaded, setIsImageLoaded] = useState(false);
   const router = useRouter();
-  const colorScheme = useColorScheme();
+
+  useEffect(() => {
+    Asset.loadAsync(image).then(() => {
+      setIsImageLoaded(true);
+    });
+  }, [image]);
+
+  const onReady = async () => {
+    const storedUser = await AsyncStorage.getItem("user");
+    if (storedUser) {
+      setUser(JSON.parse(storedUser));
+    }
+  };
+
   const onLogin = async (username: string, password: string) => {
     try {
       const res = await fetch("/login", {
@@ -56,8 +161,22 @@ export default function RootLayout() {
     setUser(null);
     router.replace("/login");
   };
+
+  if (!isImageLoaded) return null;
+
   return (
-    <AuthContext value={{ user, onLogin, onLogout }}>
+    <AuthContext.Provider value={{ user, onLogin, onLogout }}>
+      <AnimatedSplashScreen image={image} onReady={onReady}>
+        {children}
+      </AnimatedSplashScreen>
+    </AuthContext.Provider>
+  );
+}
+
+export default function RootLayout() {
+  const colorScheme = useColorScheme();
+  return (
+    <AnimatedAppLoader image={require("../assets/images/react-logo.png")}>
       <StatusBar
         backgroundColor={colorScheme === "dark" ? "#000" : "#fff"}
         barStyle={colorScheme === "dark" ? "light-content" : "dark-content"}
@@ -72,6 +191,6 @@ export default function RootLayout() {
           }}
         />
       </Stack>
-    </AuthContext>
+    </AnimatedAppLoader>
   );
 }
