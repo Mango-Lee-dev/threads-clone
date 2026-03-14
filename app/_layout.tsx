@@ -123,7 +123,7 @@ function AnimatedAppLoader({
 
   return (
     <AuthContext.Provider value={{ user, login, logout, updateUser }}>
-      {children}
+      <AnimatedSplashScreen image={image}>{children}</AnimatedSplashScreen>
     </AuthContext.Provider>
   );
 }
