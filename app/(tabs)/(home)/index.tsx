@@ -23,10 +23,10 @@ export default function Index() {
   const isReadyToRefresh = useSharedValue(false);
   const { pullDownPosition } = useContext(AnimationContext);
 
+  const apiUrl = Constants.expoConfig?.extra?.apiUrl ?? "";
+
   const onEndReached = useCallback(() => {
-    fetch(
-      `${Constants.expoConfig?.extra?.apiUrl}/posts?cursor=${posts.at(-1)?.id}`,
-    )
+    fetch(`${apiUrl}/posts?cursor=${posts.at(-1)?.id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data.posts.length > 0) {
@@ -36,12 +36,12 @@ export default function Index() {
       .catch((error) => {
         console.error(error);
       });
-  }, [posts]);
+  }, [apiUrl, posts]);
 
   const onRefresh = (done: () => void) => {
     setPosts([]);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    fetch(`${Constants.expoConfig?.extra?.apiUrl}/posts`)
+    fetch(`${apiUrl}/posts`)
       .then((res) => res.json())
       .then((data) => {
         setPosts(data.posts);
@@ -95,7 +95,6 @@ export default function Index() {
 
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
-      console.log("onScroll", event.contentOffset.y);
       scrollPosition.value = event.contentOffset.y;
     },
   });
@@ -125,9 +124,7 @@ export default function Index() {
         nestedScrollEnabled={true}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        renderItem={({ item }) => (
-          <Posts key={item.id} item={item} />
-        )}
+        renderItem={({ item }) => <Posts key={item.id} item={item} />}
         keyExtractor={(item) => item.id}
         onEndReached={onEndReached}
         onEndReachedThreshold={2}
