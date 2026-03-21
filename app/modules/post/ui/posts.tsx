@@ -9,37 +9,17 @@ import {
   useColorScheme,
   Image,
   Pressable,
-  Linking,
   ScrollView,
 } from "react-native";
 import * as WebBrowser from "expo-web-browser";
-
-export interface Post {
-  id: string;
-  user: {
-    id: string;
-    name: string;
-    profileImageUrl: string;
-    isVerified?: boolean;
-  };
-  content: string;
-  timeAgo: string;
-  likes: number;
-  comments: number;
-  reposts: number;
-  imageUrls?: string[];
-  link?: string;
-  linkThumbnail?: string;
-  location?: [number, number];
-}
+import { Post } from "@/src/types";
 
 export interface DetailedPost extends Post {
-  // Post의 필드들: id, username, displayName, content, timeAgo, likes, comments, reposts, isVerified?, avatar?, image?
-  isLiked?: boolean; // isLiked 추가
-  shares?: number; // shares 추가
+  isLiked?: boolean;
+  shares?: number;
 }
 
-export default function Posts({ item }: { item: Post }) {
+export default function PostItem({ item }: { item: Post }) {
   const router = useRouter();
   const colorScheme = useColorScheme();
   // 공유 기능 핸들러

@@ -10,11 +10,11 @@ import {
   View,
 } from "react-native";
 import { BottomTabBarButtonProps } from "@react-navigation/bottom-tabs";
-import { AuthContext } from "../_layout";
+import { AuthContext } from "@/src/features/auth";
 
 export default function TabLayout() {
   const router = useRouter();
-  const { user, onLogin, onLogout } = useContext(AuthContext);
+  const { user } = useContext(AuthContext);
   const isLoggedIn = !!user;
 
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);

@@ -1,16 +1,21 @@
 import * as Notifications from "expo-notifications";
 import type { NotificationHandlingError } from "expo-notifications";
 import * as SplashScreen from "expo-splash-screen";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Asset } from "expo-asset";
 import { Alert, Animated, Linking, StyleSheet, View } from "react-native";
-import * as SecureStore from "expo-secure-store";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as Updates from "expo-updates";
 import * as Device from "expo-device";
 import { Href, router, Stack } from "expo-router";
-import Toast, { BaseToast } from "react-native-toast-message";
+import Toast, { BaseToast, BaseToastProps } from "react-native-toast-message";
 import { StatusBar } from "expo-status-bar";
+import { AuthProvider } from "@/src/features/auth";
+import { User } from "@/src/types";
+
+// Re-export for backward compatibility
+export { AuthContext } from "@/src/features/auth";
+export type { User } from "@/src/types";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -31,107 +36,10 @@ SplashScreen.preventAutoHideAsync().catch(() => {
   console.log("Failed to prevent auto hide");
 });
 
-export interface User {
-  id: string;
-  name: string;
-  profileImageUrl: string;
-  description: string;
-  link?: string;
-  showInstagramBadge?: boolean;
-  isPrivate?: boolean;
-}
-
-export const AuthContext = createContext<{
-  user: User | null;
-  login?: () => Promise<void>;
-  logout?: () => Promise<void>;
-  updateUser?: (user: User) => Promise<void>;
-}>({
-  user: null,
-});
-
-function AnimatedAppLoader({
-  children,
-  image,
-}: {
-  children: React.ReactNode;
-  image: number;
-}) {
-  const [user, setUser] = useState<User | null>(null);
-  const [isSplashReady, setIsSplashReady] = useState(false);
-
-  useEffect(() => {
-    async function prepare() {
-      await Asset.loadAsync(image);
-      setIsSplashReady(true);
-    }
-    prepare();
-  }, [image]);
-
-  const login = (): Promise<void> => {
-    return fetch("/login", {
-      method: "POST",
-      body: JSON.stringify({
-        username: "wtlee",
-        password: "1234",
-      }),
-    })
-      .then((res) => {
-        if (res.status >= 400) {
-          return Alert.alert("Error", "Invalid username or password");
-        }
-        return res.json();
-      })
-      .then((data) => {
-        setUser(data.user);
-        return Promise.all([
-          SecureStore.setItemAsync("accessToken", data.accessToken),
-          SecureStore.setItemAsync("refreshToken", data.refreshToken),
-          AsyncStorage.setItem("user", JSON.stringify(data.user)),
-        ]);
-      })
-      .then(() => {})
-      .catch((error) => {
-        console.log(error);
-        return Alert.alert("Error", "Failed to login");
-      });
-  };
-
-  const logout = () => {
-    return Promise.all([
-      SecureStore.deleteItemAsync("accessToken"),
-      SecureStore.deleteItemAsync("refreshToken"),
-      AsyncStorage.removeItem("user"),
-    ]).then(() => {
-      setUser(null);
-    });
-  };
-
-  const updateUser = (user: User | null): Promise<void> => {
-    setUser(user);
-    if (user) {
-      return Promise.all([
-        AsyncStorage.setItem("user", JSON.stringify(user)),
-      ]).then(() => {});
-    }
-    return Promise.all([AsyncStorage.removeItem("user")]).then(() => {});
-  };
-
-  if (!isSplashReady) {
-    return null;
-  }
-
-  return (
-    <AuthContext.Provider value={{ user, login, logout, updateUser }}>
-      <AnimatedSplashScreen image={image}>{children}</AnimatedSplashScreen>
-    </AuthContext.Provider>
-  );
-}
-
 async function sendPushNotification(expoPushToken: string) {
   const message = {
     to: expoPushToken,
-    send: "default",
+    sound: "default",
     title: "Original Title",
     body: "Original Body",
     data: {
@@ -150,6 +58,40 @@ async function sendPushNotification(expoPushToken: string) {
   });
 }
 
+function AnimatedAppLoader({
+  children,
+  image,
+}: {
+  children: React.ReactNode;
+  image: number;
+}) {
+  const [initialUser, setInitialUser] = useState<User | null>(null);
+  const [isSplashReady, setIsSplashReady] = useState(false);
+
+  useEffect(() => {
+    async function prepare() {
+      await Asset.loadAsync(image);
+      // 저장된 사용자 정보 복원
+      const userJson = await AsyncStorage.getItem("user");
+      if (userJson) {
+        setInitialUser(JSON.parse(userJson));
+      }
+      setIsSplashReady(true);
+    }
+    prepare();
+  }, [image]);
+
+  if (!isSplashReady) {
+    return null;
+  }
+
+  return (
+    <AuthProvider initialUser={initialUser}>
+      <AnimatedSplashScreen image={image}>{children}</AnimatedSplashScreen>
+    </AuthProvider>
+  );
+}
+
 function AnimatedSplashScreen({
   children,
   image,
@@ -161,11 +103,7 @@ function AnimatedSplashScreen({
   const [isSplashAnimationComplete, setIsSplashAnimationComplete] =
     useState(false);
   const animation = useRef(new Animated.Value(1)).current;
-  const { updateUser } = useContext(AuthContext);
   const [expoPushToken, setExpoPushToken] = useState<string | null>(null);
-
-  const { currentlyRunning, isUpdateAvailable, isUpdatePending } =
-    Updates.useUpdates();
 
   useEffect(() => {
     if (isAppReady) {
@@ -175,7 +113,7 @@ function AnimatedSplashScreen({
         useNativeDriver: true,
       }).start(() => setIsSplashAnimationComplete(true));
     }
-  }, [isAppReady]);
+  }, [isAppReady, animation]);
 
   async function onFetchUpdateAsync() {
     try {
@@ -195,19 +133,13 @@ function AnimatedSplashScreen({
       }
     } catch (error) {
       console.error(error);
-      // You can also add an alert() to see the error message in case of an error when fetching updates.
       alert(`Error fetching latest Expo update: ${error}`);
     }
   }
 
   const onImageLoaded = async () => {
     try {
-      await Promise.all([
-        AsyncStorage.getItem("user").then((user) => {
-          updateUser?.(user ? JSON.parse(user) : null);
-        }),
-        onFetchUpdateAsync(),
-      ]);
+      await onFetchUpdateAsync();
       await SplashScreen.hideAsync();
       const { status } = await Notifications.requestPermissionsAsync();
       if (status !== "granted") {
@@ -228,7 +160,6 @@ function AnimatedSplashScreen({
 
   useEffect(() => {
     if (expoPushToken && Device.isDevice) {
-      Alert.alert("sendPushNotification", expoPushToken);
       sendPushNotification(expoPushToken);
     }
   }, [expoPushToken]);
@@ -273,12 +204,9 @@ function AnimatedSplashScreen({
 
 function useNotificationObserver() {
   useEffect(() => {
-    let isMounted = true;
-
     function redirect(notification: Notifications.Notification) {
       const url = notification.request.content.data?.url as string;
       if (url && url.startsWith("threads://")) {
-        Alert.alert("redirect", url);
         router.push(url.replace("threads://", "/") as Href);
       }
     }
@@ -292,45 +220,44 @@ function useNotificationObserver() {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         redirect(response.notification);
-      },
+      }
     );
 
     return () => {
-      isMounted = false;
       subscription.remove();
     };
   }, []);
 }
 
+const toastConfig = {
+  customToast: (props: BaseToastProps) => (
+    <BaseToast
+      style={{
+        backgroundColor: "white",
+        borderRadius: 20,
+        height: 40,
+        borderLeftWidth: 0,
+        shadowOpacity: 0,
+        justifyContent: "center",
+      }}
+      contentContainerStyle={{
+        paddingHorizontal: 16,
+        alignItems: "center",
+        height: 40,
+      }}
+      text1Style={{
+        color: "black",
+        fontSize: 14,
+        fontWeight: "500",
+      }}
+      text1={props.text1}
+      onPress={props.onPress}
+    />
+  ),
+};
+
 export default function RootLayout() {
   useNotificationObserver();
-
-  const toastConfig = {
-    customToast: (props: any) => (
-      <BaseToast
-        style={{
-          backgroundColor: "white",
-          borderRadius: 20,
-          height: 40,
-          borderLeftWidth: 0,
-          shadowOpacity: 0,
-          justifyContent: "center",
-        }}
-        contentContainerStyle={{
-          paddingHorizontal: 16,
-          alignItems: "center",
-          height: 40,
-        }}
-        text1Style={{
-          color: "black",
-          fontSize: 14,
-          fontWeight: "500",
-        }}
-        text1={props.text1}
-        onPress={props.onPress}
-      />
-    ),
-  };
 
   return (
     <AnimatedAppLoader image={require("../assets/images/react-logo.png")}>

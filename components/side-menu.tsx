@@ -11,8 +11,8 @@ import {
   Appearance,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BlurView } from "expo-blur"; // For background blur effect
-import { AuthContext } from "../app/_layout";
+import { BlurView } from "expo-blur";
+import { AuthContext } from "@/src/features/auth";
 
 interface SideMenuProps {
   isVisible: boolean;
@@ -20,7 +20,7 @@ interface SideMenuProps {
 }
 
 const SideMenu: React.FC<SideMenuProps> = ({ isVisible, onClose }) => {
-  const { onLogout } = useContext(AuthContext);
+  const { logout } = useContext(AuthContext);
   const colorScheme = useColorScheme();
   const [isAppearanceVisible, setIsAppearanceVisible] = useState(false);
 
@@ -32,11 +32,9 @@ const SideMenu: React.FC<SideMenuProps> = ({ isVisible, onClose }) => {
     setIsAppearanceVisible(false);
   };
 
-  const handleLogout = () => {
-    onLogout?.();
-    onClose(); // Close the menu after logout
-    // Optionally navigate to login screen or home screen
-    // e.g., using router.replace('/login');
+  const handleLogout = async () => {
+    await logout();
+    onClose();
   };
 
   // Use Modal for better presentation and handling outside clicks

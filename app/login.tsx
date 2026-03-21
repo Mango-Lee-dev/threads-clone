@@ -2,15 +2,15 @@ import { Redirect, useRouter } from "expo-router";
 import { View, Text, Pressable, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useContext } from "react";
-import { AuthContext } from "./_layout";
+import { AuthContext } from "@/src/features/auth";
 
 export default function Login() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { user, onLogin } = useContext(AuthContext);
+  const { user, login } = useContext(AuthContext);
 
   const handleLogin = async () => {
-    await onLogin("wtlee", "1234");
+    await login("wtlee", "1234");
   };
 
   if (user) {
