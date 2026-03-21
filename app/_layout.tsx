@@ -11,6 +11,7 @@ import { Href, router, Stack } from "expo-router";
 import Toast, { BaseToast, BaseToastProps } from "react-native-toast-message";
 import { StatusBar } from "expo-status-bar";
 import { AuthProvider } from "@/src/features/auth";
+import { QueryProvider } from "@/src/providers/QueryProvider";
 import { User } from "@/src/types";
 
 // Re-export for backward compatibility
@@ -86,9 +87,11 @@ function AnimatedAppLoader({
   }
 
   return (
-    <AuthProvider initialUser={initialUser}>
-      <AnimatedSplashScreen image={image}>{children}</AnimatedSplashScreen>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider initialUser={initialUser}>
+        <AnimatedSplashScreen image={image}>{children}</AnimatedSplashScreen>
+      </AuthProvider>
+    </QueryProvider>
   );
 }
 

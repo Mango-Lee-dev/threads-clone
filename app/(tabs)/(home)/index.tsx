@@ -1,7 +1,13 @@
-import { Post } from "@/src/types";
-import { postsApi } from "@/src/services/api";
-import { useCallback, useContext, useRef, useState } from "react";
-import { View, StyleSheet, useColorScheme, PanResponder } from "react-native";
+import { usePosts } from "@/src/features/post";
+import { useCallback, useContext, useMemo, useRef } from "react";
+import {
+  View,
+  StyleSheet,
+  useColorScheme,
+  PanResponder,
+  ActivityIndicator,
+  Text,
+} from "react-native";
 import Animated, {
   useAnimatedScrollHandler,
   useAnimatedStyle,
@@ -14,43 +20,41 @@ import PostItem from "@/app/modules/post/ui/posts";
 
 export default function Index() {
   const colorScheme = useColorScheme();
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const scrollPosition = useSharedValue(0);
   const isReadyToRefresh = useSharedValue(false);
   const { pullDownPosition } = useContext(AnimationContext);
 
-  const onEndReached = useCallback(async () => {
-    if (isLoading || posts.length === 0) return;
+  const {
+    data,
+    isLoading,
+    isError,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+    isRefetching,
+  } = usePosts();
 
-    const lastPostId = posts.at(-1)?.id;
-    if (!lastPostId) return;
+  // 모든 페이지의 posts를 평탄화
+  const posts = useMemo(() => {
+    return data?.pages.flatMap((page) => page.posts) ?? [];
+  }, [data]);
 
-    setIsLoading(true);
-    try {
-      const data = await postsApi.getPosts(lastPostId);
-      if (data.posts.length > 0) {
-        setPosts((prev) => [...prev, ...data.posts]);
-      }
-    } catch (error) {
-      console.error("Failed to load more posts:", error);
-    } finally {
-      setIsLoading(false);
+  const onEndReached = useCallback(() => {
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [isLoading, posts]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const onRefresh = async (done: () => void) => {
-    setPosts([]);
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-    try {
-      const data = await postsApi.getPosts();
-      setPosts(data.posts);
-    } catch (error) {
-      console.error("Failed to refresh posts:", error);
-    } finally {
+  const onRefresh = useCallback(
+    async (done: () => void) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+      await refetch();
       done();
-    }
-  };
+    },
+    [refetch]
+  );
 
   const onPanRelease = () => {
     pullDownPosition.value = withTiming(isReadyToRefresh.value ? 60 : 0, {
@@ -71,7 +75,6 @@ export default function Index() {
       onPanResponderMove: (event, gestureState) => {
         const max = 120;
         pullDownPosition.value = Math.max(Math.min(gestureState.dy, max), 0);
-        console.log("pull", pullDownPosition.value);
 
         if (
           pullDownPosition.value >= max / 2 &&
@@ -88,7 +91,7 @@ export default function Index() {
       },
       onPanResponderRelease: onPanRelease,
       onPanResponderTerminate: onPanRelease,
-    }),
+    })
   );
 
   const scrollHandler = useAnimatedScrollHandler({
@@ -106,6 +109,51 @@ export default function Index() {
       ],
     };
   });
+
+  const renderFooter = () => {
+    if (!isFetchingNextPage) return null;
+    return (
+      <View style={styles.footer}>
+        <ActivityIndicator size="small" />
+      </View>
+    );
+  };
+
+  if (isLoading) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centered,
+          colorScheme === "dark" ? styles.containerDark : styles.containerLight,
+        ]}
+      >
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
+  if (isError) {
+    return (
+      <View
+        style={[
+          styles.container,
+          styles.centered,
+          colorScheme === "dark" ? styles.containerDark : styles.containerLight,
+        ]}
+      >
+        <Text
+          style={
+            colorScheme === "dark"
+              ? styles.textDefaultDark
+              : styles.textDefaultLight
+          }
+        >
+          오류가 발생했습니다: {(error as Error)?.message}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     <Animated.View
@@ -125,7 +173,8 @@ export default function Index() {
         renderItem={({ item }) => <PostItem key={item.id} item={item} />}
         keyExtractor={(item) => item.id}
         onEndReached={onEndReached}
-        onEndReachedThreshold={2}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={renderFooter}
       />
     </Animated.View>
   );
@@ -135,31 +184,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  tabContainer: {
-    flexDirection: "row",
-  },
-  tab: {
-    flex: 1,
-  },
-  header: {
+  centered: {
+    justifyContent: "center",
     alignItems: "center",
   },
-  headerLogo: {
-    width: 42,
-    height: 42,
-  },
-  loginButton: {
-    position: "absolute",
-    right: 20,
-    top: 0,
-    borderWidth: 1,
-    backgroundColor: "black",
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 10,
-  },
-  loginButtonText: {
-    color: "white",
+  footer: {
+    padding: 20,
+    alignItems: "center",
   },
   textDefaultDark: {
     color: "white",
@@ -167,7 +198,6 @@ const styles = StyleSheet.create({
   textDefaultLight: {
     color: "black",
   },
-
   containerLight: {
     backgroundColor: "white",
   },

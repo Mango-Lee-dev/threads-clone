@@ -18,7 +18,11 @@ export function setupMockServer() {
       registerAuthHandlers(this);
       registerPostsHandlers(this);
 
-      // 처리되지 않은 요청은 통과
+      // 외부 API 요청은 통과
+      this.passthrough("https://exp.host/**");
+      this.passthrough("https://expo.dev/**");
+      this.passthrough("http://192.168.**");
+      this.passthrough("http://localhost:**");
       this.passthrough();
     },
   });
