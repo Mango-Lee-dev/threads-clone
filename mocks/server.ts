@@ -1,6 +1,7 @@
 import { createServer } from "miragejs";
 import { registerAuthHandlers } from "./handlers/auth";
 import { registerPostsHandlers } from "./handlers/posts";
+import { registerUploadHandlers } from "./handlers/upload";
 
 declare global {
   interface Window {
@@ -17,6 +18,7 @@ export function setupMockServer() {
     routes() {
       registerAuthHandlers(this);
       registerPostsHandlers(this);
+      registerUploadHandlers(this);
 
       // 외부 API 요청은 통과
       this.passthrough("https://exp.host/**");

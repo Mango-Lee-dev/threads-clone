@@ -223,7 +223,7 @@ function useNotificationObserver() {
     const subscription = Notifications.addNotificationResponseReceivedListener(
       (response) => {
         redirect(response.notification);
-      }
+      },
     );
 
     return () => {

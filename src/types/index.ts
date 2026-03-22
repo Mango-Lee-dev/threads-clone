@@ -100,3 +100,27 @@ export interface ApiError {
   message?: string;
   statusCode?: number;
 }
+
+// Thread Composer 타입
+export interface ThreadDraft {
+  id: string;
+  text: string;
+  imageUris: string[];
+  location?: [number, number];
+}
+
+export type ReplyOption = "Anyone" | "Profiles you follow" | "Mentioned only";
+
+export type ReplyOptionValue = "anyone" | "following" | "mentioned";
+
+export const REPLY_OPTION_MAP: Record<ReplyOption, ReplyOptionValue> = {
+  "Anyone": "anyone",
+  "Profiles you follow": "following",
+  "Mentioned only": "mentioned",
+};
+
+// Upload 응답 타입
+export interface UploadResponse {
+  url: string;
+  filename: string;
+}
