@@ -19,8 +19,22 @@ export function usePosts() {
     },
     initialPageParam: undefined as string | undefined,
     getNextPageParam: (lastPage) => {
-      if (lastPage.posts.length === 0) return undefined;
-      return lastPage.posts.at(-1)?.id;
+      // 서버에서 반환하는 nextCursor 사용
+      return lastPage.nextCursor ?? undefined;
+    },
+  });
+}
+
+export function useFollowingPosts() {
+  return useInfiniteQuery({
+    queryKey: [...postKeys.lists(), "following"],
+    queryFn: async ({ pageParam }) => {
+      const data = await postsApi.getFollowingPosts(pageParam);
+      return data;
+    },
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (lastPage) => {
+      return lastPage.nextCursor ?? undefined;
     },
   });
 }

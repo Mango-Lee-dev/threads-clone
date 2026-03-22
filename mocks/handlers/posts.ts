@@ -9,19 +9,47 @@ let reposts = [...dummyReposts];
 let nextId = posts.length + 1;
 
 export function registerPostsHandlers(server: Server) {
-  // 포스트 목록 조회
+  // 포스트 목록 조회 (For You)
   server.get("/posts", (schema, request) => {
     const cursor = request.queryParams?.cursor;
 
     if (cursor) {
       const cursorIndex = posts.findIndex((p) => p.id === cursor);
       if (cursorIndex === -1 || cursorIndex >= posts.length - 1) {
-        return { posts: [] };
+        return { posts: [], nextCursor: null };
       }
-      return { posts: posts.slice(cursorIndex + 1, cursorIndex + 6) };
+      const nextPosts = posts.slice(cursorIndex + 1, cursorIndex + 6);
+      const nextCursor =
+        cursorIndex + 6 < posts.length ? nextPosts[nextPosts.length - 1]?.id : null;
+      return { posts: nextPosts, nextCursor };
     }
 
-    return { posts: posts.slice(0, 5) };
+    const nextCursor = posts.length > 5 ? posts[4]?.id : null;
+    return { posts: posts.slice(0, 5), nextCursor };
+  });
+
+  // 팔로잉 피드 조회 (Following 탭)
+  // Mock: user1, user2, user3을 팔로우한다고 가정
+  const followingUserIds = ["user1", "user2", "user3"];
+  server.get("/posts/following", (schema, request) => {
+    const cursor = request.queryParams?.cursor;
+    const followingPosts = posts.filter((p) => followingUserIds.includes(p.user.id));
+
+    if (cursor) {
+      const cursorIndex = followingPosts.findIndex((p) => p.id === cursor);
+      if (cursorIndex === -1 || cursorIndex >= followingPosts.length - 1) {
+        return { posts: [], nextCursor: null };
+      }
+      const nextPosts = followingPosts.slice(cursorIndex + 1, cursorIndex + 6);
+      const nextCursor =
+        cursorIndex + 6 < followingPosts.length
+          ? nextPosts[nextPosts.length - 1]?.id
+          : null;
+      return { posts: nextPosts, nextCursor };
+    }
+
+    const nextCursor = followingPosts.length > 5 ? followingPosts[4]?.id : null;
+    return { posts: followingPosts.slice(0, 5), nextCursor };
   });
 
   // 단일 포스트 조회

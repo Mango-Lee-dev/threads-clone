@@ -14,6 +14,12 @@ export const postsApi = {
     return response.data;
   },
 
+  getFollowingPosts: async (cursor?: string): Promise<PostsResponse> => {
+    const params = cursor ? { cursor } : {};
+    const response = await apiClient.get<PostsResponse>("/posts/following", { params });
+    return response.data;
+  },
+
   getPost: async (postId: string): Promise<Post> => {
     const response = await apiClient.get<Post>(`/posts/${postId}`);
     return response.data;

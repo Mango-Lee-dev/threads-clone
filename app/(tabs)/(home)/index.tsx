@@ -1,5 +1,6 @@
 import { usePosts } from "@/src/features/post";
 import { useCallback, useContext, useMemo, useRef } from "react";
+import { AuthContext } from "@/app/_layout";
 import {
   View,
   StyleSheet,
@@ -9,6 +10,7 @@ import {
   Text,
 } from "react-native";
 import Animated, {
+  runOnJS,
   useAnimatedScrollHandler,
   useAnimatedStyle,
   useSharedValue,
@@ -20,7 +22,9 @@ import PostItem from "@/app/modules/post/ui/posts";
 
 export default function Index() {
   const colorScheme = useColorScheme();
+  const { user } = useContext(AuthContext);
   const scrollPosition = useSharedValue(0);
+  const scrollPositionRef = useRef(0); // PanResponder용 일반 ref
   const isReadyToRefresh = useSharedValue(false);
   const { pullDownPosition } = useContext(AnimationContext);
 
@@ -36,10 +40,12 @@ export default function Index() {
     isRefetching,
   } = usePosts();
 
-  // 모든 페이지의 posts를 평탄화
+  // 모든 페이지의 posts를 평탄화하고, 본인 게시물 제외
   const posts = useMemo(() => {
-    return data?.pages.flatMap((page) => page.posts) ?? [];
-  }, [data]);
+    const allPosts = data?.pages.flatMap((page) => page.posts) ?? [];
+    // 본인 게시물 필터링
+    return user ? allPosts.filter((post) => post.user.id !== user.id) : allPosts;
+  }, [data, user]);
 
   const onEndReached = useCallback(() => {
     if (hasNextPage && !isFetchingNextPage) {
@@ -57,21 +63,26 @@ export default function Index() {
   );
 
   const onPanRelease = () => {
-    pullDownPosition.value = withTiming(isReadyToRefresh.value ? 60 : 0, {
+    const shouldRefresh = isReadyToRefresh.value;
+    pullDownPosition.value = withTiming(shouldRefresh ? 60 : 0, {
       duration: 300,
     });
-    if (isReadyToRefresh.value) {
+    if (shouldRefresh) {
       onRefresh(() => {
         pullDownPosition.value = withTiming(0, {
           duration: 300,
         });
+        isReadyToRefresh.value = false; // 초기화
       });
     }
   };
 
   const panResponderRef = useRef(
     PanResponder.create({
-      onMoveShouldSetPanResponder: () => true,
+      onMoveShouldSetPanResponder: (_, gestureState) => {
+        // 스크롤이 최상단이고, 아래로 드래그할 때만 PanResponder 활성화
+        return scrollPositionRef.current <= 0 && gestureState.dy > 0;
+      },
       onPanResponderMove: (event, gestureState) => {
         const max = 120;
         pullDownPosition.value = Math.max(Math.min(gestureState.dy, max), 0);
@@ -94,9 +105,14 @@ export default function Index() {
     })
   );
 
+  const updateScrollRef = (y: number) => {
+    scrollPositionRef.current = y;
+  };
+
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollPosition.value = event.contentOffset.y;
+      runOnJS(updateScrollRef)(event.contentOffset.y);
     },
   });
 
@@ -170,7 +186,7 @@ export default function Index() {
         nestedScrollEnabled={true}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        renderItem={({ item }) => <PostItem key={item.id} item={item} />}
+        renderItem={({ item }) => <PostItem item={item} />}
         keyExtractor={(item) => item.id}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}

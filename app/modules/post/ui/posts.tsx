@@ -36,17 +36,8 @@ export default function PostItem({ item }: { item: Post }) {
     }
   };
 
-  // 게시글 클릭 핸들러 수정
+  // 게시글 클릭 핸들러
   const handlePostPress = (post: Post) => {
-    console.log("postClick");
-    // DetailedPost 타입에 맞게 데이터 변환 (isLiked, shares는 상세 화면에서 관리)
-    const detailedPost: DetailedPost = {
-      ...post,
-      // isLiked, shares 는 PostScreen 에서 초기화하거나 API 응답으로 받아와야 함
-      // 여기서는 기본값 또는 undefined 로 설정
-      isLiked: false, // 예시: 기본값 false
-      shares: 0, // 예시: 기본값 0
-    };
     router.push(`/@${post.user.id}/post/${post.id}`);
   };
 
