@@ -2,10 +2,10 @@ import { AuthContext } from "@/app/_layout";
 import { RepostItem } from "@/components/posts/repost-item";
 import { EmptyState } from "@/components/posts/empty-state";
 import { PostSkeleton } from "@/components/posts/post-skeleton";
-import { postsApi } from "@/src/services/api/posts";
+import { useUserReposts } from "@/src/features/profile";
 import { Repost } from "@/src/types";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useMemo } from "react";
 import {
   RefreshControl,
   useColorScheme,
@@ -19,58 +19,32 @@ export default function RepostsTab() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const { user } = useContext(AuthContext);
 
-  const [reposts, setReposts] = useState<Repost[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const [hasMore, setHasMore] = useState(true);
-
   const userId = username?.startsWith("@") ? username.slice(1) : username;
   const isOwnProfile = user?.id === userId;
 
-  const fetchReposts = useCallback(async (refresh = false) => {
-    if (!userId) return;
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useUserReposts(userId ?? "");
 
-    try {
-      if (refresh) {
-        setIsRefreshing(true);
-      }
-
-      const response = await postsApi.getUserReposts(
-        userId,
-        refresh ? undefined : cursor
-      );
-
-      if (refresh) {
-        setReposts(response.reposts);
-      } else {
-        setReposts((prev) => [...prev, ...response.reposts]);
-      }
-
-      setCursor(response.nextCursor);
-      setHasMore(!!response.nextCursor);
-    } catch (error) {
-      console.error("Failed to fetch reposts:", error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [userId, cursor]);
-
-  useEffect(() => {
-    fetchReposts(true);
-  }, [userId]);
+  const reposts = useMemo(() => {
+    return data?.pages.flatMap((page) => page.reposts) ?? [];
+  }, [data]);
 
   const handleRefresh = useCallback(() => {
-    setCursor(undefined);
-    fetchReposts(true);
-  }, [fetchReposts]);
+    refetch();
+  }, [refetch]);
 
   const handleEndReached = useCallback(() => {
-    if (!isLoading && hasMore && !isRefreshing) {
-      fetchReposts(false);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [isLoading, hasMore, isRefreshing, fetchReposts]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderItem = useCallback(({ item }: { item: Repost }) => (
     <RepostItem repost={item} />
@@ -96,7 +70,7 @@ export default function RepostsTab() {
         onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
+            refreshing={isRefetching}
             onRefresh={handleRefresh}
             tintColor={colorScheme === "dark" ? "#fff" : "#000"}
           />

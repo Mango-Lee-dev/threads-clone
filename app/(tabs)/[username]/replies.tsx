@@ -2,10 +2,10 @@ import { AuthContext } from "@/app/_layout";
 import { ReplyItem } from "@/components/posts/reply-item";
 import { EmptyState } from "@/components/posts/empty-state";
 import { PostSkeleton } from "@/components/posts/post-skeleton";
-import { postsApi } from "@/src/services/api/posts";
+import { useUserReplies } from "@/src/features/profile";
 import { Reply } from "@/src/types";
 import { useLocalSearchParams } from "expo-router";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useMemo } from "react";
 import {
   RefreshControl,
   useColorScheme,
@@ -19,58 +19,32 @@ export default function RepliesTab() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const { user } = useContext(AuthContext);
 
-  const [replies, setReplies] = useState<Reply[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const [hasMore, setHasMore] = useState(true);
-
   const userId = username?.startsWith("@") ? username.slice(1) : username;
   const isOwnProfile = user?.id === userId;
 
-  const fetchReplies = useCallback(async (refresh = false) => {
-    if (!userId) return;
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useUserReplies(userId ?? "");
 
-    try {
-      if (refresh) {
-        setIsRefreshing(true);
-      }
-
-      const response = await postsApi.getUserReplies(
-        userId,
-        refresh ? undefined : cursor
-      );
-
-      if (refresh) {
-        setReplies(response.replies);
-      } else {
-        setReplies((prev) => [...prev, ...response.replies]);
-      }
-
-      setCursor(response.nextCursor);
-      setHasMore(!!response.nextCursor);
-    } catch (error) {
-      console.error("Failed to fetch replies:", error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [userId, cursor]);
-
-  useEffect(() => {
-    fetchReplies(true);
-  }, [userId]);
+  const replies = useMemo(() => {
+    return data?.pages.flatMap((page) => page.replies) ?? [];
+  }, [data]);
 
   const handleRefresh = useCallback(() => {
-    setCursor(undefined);
-    fetchReplies(true);
-  }, [fetchReplies]);
+    refetch();
+  }, [refetch]);
 
   const handleEndReached = useCallback(() => {
-    if (!isLoading && hasMore && !isRefreshing) {
-      fetchReplies(false);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [isLoading, hasMore, isRefreshing, fetchReplies]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderItem = useCallback(({ item }: { item: Reply }) => (
     <ReplyItem reply={item} />
@@ -96,7 +70,7 @@ export default function RepliesTab() {
         onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
+            refreshing={isRefetching}
             onRefresh={handleRefresh}
             tintColor={colorScheme === "dark" ? "#fff" : "#000"}
           />

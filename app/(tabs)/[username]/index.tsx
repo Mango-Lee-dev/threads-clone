@@ -2,10 +2,10 @@ import { AuthContext } from "@/app/_layout";
 import { PostItem } from "@/components/posts/post-item";
 import { EmptyState } from "@/components/posts/empty-state";
 import { PostSkeleton } from "@/components/posts/post-skeleton";
-import { postsApi } from "@/src/services/api/posts";
+import { useUserPosts } from "@/src/features/profile";
 import { Post } from "@/src/types";
 import { router, useLocalSearchParams, usePathname } from "expo-router";
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useContext, useMemo } from "react";
 import {
   Pressable,
   RefreshControl,
@@ -68,58 +68,32 @@ export default function ThreadsTab() {
   const { username } = useLocalSearchParams<{ username: string }>();
   const { user } = useContext(AuthContext);
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [isRefreshing, setIsRefreshing] = useState(false);
-  const [cursor, setCursor] = useState<string | undefined>(undefined);
-  const [hasMore, setHasMore] = useState(true);
-
   const userId = username?.startsWith("@") ? username.slice(1) : username;
   const isOwnProfile = user?.id === userId;
 
-  const fetchPosts = useCallback(async (refresh = false) => {
-    if (!userId) return;
+  const {
+    data,
+    isLoading,
+    isRefetching,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    refetch,
+  } = useUserPosts(userId ?? "");
 
-    try {
-      if (refresh) {
-        setIsRefreshing(true);
-      }
-
-      const response = await postsApi.getUserPosts(
-        userId,
-        refresh ? undefined : cursor
-      );
-
-      if (refresh) {
-        setPosts(response.posts);
-      } else {
-        setPosts((prev) => [...prev, ...response.posts]);
-      }
-
-      setCursor(response.nextCursor);
-      setHasMore(!!response.nextCursor);
-    } catch (error) {
-      console.error("Failed to fetch posts:", error);
-    } finally {
-      setIsLoading(false);
-      setIsRefreshing(false);
-    }
-  }, [userId, cursor]);
-
-  useEffect(() => {
-    fetchPosts(true);
-  }, [userId]);
+  const posts = useMemo(() => {
+    return data?.pages.flatMap((page) => page.posts) ?? [];
+  }, [data]);
 
   const handleRefresh = useCallback(() => {
-    setCursor(undefined);
-    fetchPosts(true);
-  }, [fetchPosts]);
+    refetch();
+  }, [refetch]);
 
   const handleEndReached = useCallback(() => {
-    if (!isLoading && hasMore && !isRefreshing) {
-      fetchPosts(false);
+    if (hasNextPage && !isFetchingNextPage) {
+      fetchNextPage();
     }
-  }, [isLoading, hasMore, isRefreshing, fetchPosts]);
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
   const renderItem = useCallback(({ item }: { item: Post }) => (
     <PostItem post={item} />
@@ -146,7 +120,7 @@ export default function ThreadsTab() {
         onEndReachedThreshold={0.5}
         refreshControl={
           <RefreshControl
-            refreshing={isRefreshing}
+            refreshing={isRefetching}
             onRefresh={handleRefresh}
             tintColor={colorScheme === "dark" ? "#fff" : "#000"}
           />

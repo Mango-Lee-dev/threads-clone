@@ -19,29 +19,26 @@ export interface DetailedPost extends Post {
   shares?: number;
 }
 
-export default function PostItem({ item }: { item: Post }) {
+export function FeedPostItem({ item }: { item: Post }) {
   const router = useRouter();
   const colorScheme = useColorScheme();
-  // 공유 기능 핸들러
+
   const handleShare = async (username: string, postId: string) => {
     const shareUrl = `thread://@${username}/post/${postId}`;
     try {
       await Share.share({
         message: shareUrl,
-        url: shareUrl, // iOS에서는 url도 함께 전달하는 것이 좋습니다.
+        url: shareUrl,
       });
     } catch (error) {
       console.error("Error sharing post:", error);
-      // 사용자에게 오류 메시지를 표시할 수도 있습니다.
     }
   };
 
-  // 게시글 클릭 핸들러
   const handlePostPress = (post: Post) => {
     router.push(`/@${post.user.id}/post/${post.id}`);
   };
 
-  // 사용자 정보 클릭 핸들러 (아바타 또는 이름)
   const handleUserPress = (post: Post) => {
     router.push(`/@${post.user.id}`);
   };
@@ -178,7 +175,6 @@ export default function PostItem({ item }: { item: Post }) {
 }
 
 const styles = StyleSheet.create({
-  // 포스트 스타일
   postContainer: {
     borderBottomWidth: 1,
     borderBottomColor: "#eee",

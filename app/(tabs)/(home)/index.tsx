@@ -18,7 +18,7 @@ import Animated, {
 } from "react-native-reanimated";
 import { AnimationContext } from "./_layout";
 import * as Haptics from "expo-haptics";
-import PostItem from "@/app/modules/post/ui/posts";
+import { FeedPostItem } from "@/src/modules/post";
 
 export default function Index() {
   const colorScheme = useColorScheme();
@@ -186,7 +186,7 @@ export default function Index() {
         nestedScrollEnabled={true}
         onScroll={scrollHandler}
         scrollEventThrottle={16}
-        renderItem={({ item }) => <PostItem item={item} />}
+        renderItem={({ item }) => <FeedPostItem item={item} />}
         keyExtractor={(item) => item.id}
         onEndReached={onEndReached}
         onEndReachedThreshold={0.5}
