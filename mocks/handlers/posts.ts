@@ -1,7 +1,11 @@
 import { Server, Response } from "miragejs";
 import { dummyPosts } from "../data/posts";
+import { dummyReplies } from "../data/replies";
+import { dummyReposts } from "../data/reposts";
 
 let posts = [...dummyPosts];
+let replies = [...dummyReplies];
+let reposts = [...dummyReposts];
 let nextId = posts.length + 1;
 
 export function registerPostsHandlers(server: Server) {
@@ -108,7 +112,7 @@ export function registerPostsHandlers(server: Server) {
     return new Response(404, {}, { error: "Post not found" });
   });
 
-  // 유저별 포스트 조회
+  // 유저별 포스트 조회 (Threads 탭)
   server.get("/users/:userId/posts", (schema, request) => {
     const { userId } = request.params;
     const cursor = request.queryParams?.cursor;
@@ -117,11 +121,63 @@ export function registerPostsHandlers(server: Server) {
     if (cursor) {
       const cursorIndex = userPosts.findIndex((p) => p.id === cursor);
       if (cursorIndex === -1 || cursorIndex >= userPosts.length - 1) {
-        return { posts: [] };
+        return { posts: [], nextCursor: null };
       }
-      return { posts: userPosts.slice(cursorIndex + 1, cursorIndex + 6) };
+      const nextPosts = userPosts.slice(cursorIndex + 1, cursorIndex + 6);
+      const nextCursor =
+        cursorIndex + 6 < userPosts.length
+          ? nextPosts[nextPosts.length - 1]?.id
+          : null;
+      return { posts: nextPosts, nextCursor };
     }
 
-    return { posts: userPosts.slice(0, 5) };
+    const nextCursor = userPosts.length > 5 ? userPosts[4]?.id : null;
+    return { posts: userPosts.slice(0, 5), nextCursor };
+  });
+
+  // 유저별 답글 조회 (Replies 탭)
+  server.get("/users/:userId/replies", (schema, request) => {
+    const { userId } = request.params;
+    const cursor = request.queryParams?.cursor;
+    const userReplies = replies.filter((r) => r.user.id === userId);
+
+    if (cursor) {
+      const cursorIndex = userReplies.findIndex((r) => r.id === cursor);
+      if (cursorIndex === -1 || cursorIndex >= userReplies.length - 1) {
+        return { replies: [], nextCursor: null };
+      }
+      const nextReplies = userReplies.slice(cursorIndex + 1, cursorIndex + 6);
+      const nextCursor =
+        cursorIndex + 6 < userReplies.length
+          ? nextReplies[nextReplies.length - 1]?.id
+          : null;
+      return { replies: nextReplies, nextCursor };
+    }
+
+    const nextCursor = userReplies.length > 5 ? userReplies[4]?.id : null;
+    return { replies: userReplies.slice(0, 5), nextCursor };
+  });
+
+  // 유저별 리포스트 조회 (Reposts 탭)
+  server.get("/users/:userId/reposts", (schema, request) => {
+    const { userId } = request.params;
+    const cursor = request.queryParams?.cursor;
+    const userReposts = reposts.filter((r) => r.user.id === userId);
+
+    if (cursor) {
+      const cursorIndex = userReposts.findIndex((r) => r.id === cursor);
+      if (cursorIndex === -1 || cursorIndex >= userReposts.length - 1) {
+        return { reposts: [], nextCursor: null };
+      }
+      const nextReposts = userReposts.slice(cursorIndex + 1, cursorIndex + 6);
+      const nextCursor =
+        cursorIndex + 6 < userReposts.length
+          ? nextReposts[nextReposts.length - 1]?.id
+          : null;
+      return { reposts: nextReposts, nextCursor };
+    }
+
+    const nextCursor = userReposts.length > 5 ? userReposts[4]?.id : null;
+    return { reposts: userReposts.slice(0, 5), nextCursor };
   });
 }

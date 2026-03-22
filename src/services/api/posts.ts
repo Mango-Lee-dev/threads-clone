@@ -1,5 +1,5 @@
 import apiClient from "./client";
-import { Post, PostsResponse } from "@/src/types";
+import { Post, PostsResponse, RepliesResponse, RepostsResponse } from "@/src/types";
 
 export interface CreatePostRequest {
   content: string;
@@ -53,6 +53,24 @@ export const postsApi = {
     const params = cursor ? { cursor } : {};
     const response = await apiClient.get<PostsResponse>(
       `/users/${userId}/posts`,
+      { params }
+    );
+    return response.data;
+  },
+
+  getUserReplies: async (userId: string, cursor?: string): Promise<RepliesResponse> => {
+    const params = cursor ? { cursor } : {};
+    const response = await apiClient.get<RepliesResponse>(
+      `/users/${userId}/replies`,
+      { params }
+    );
+    return response.data;
+  },
+
+  getUserReposts: async (userId: string, cursor?: string): Promise<RepostsResponse> => {
+    const params = cursor ? { cursor } : {};
+    const response = await apiClient.get<RepostsResponse>(
+      `/users/${userId}/reposts`,
       { params }
     );
     return response.data;

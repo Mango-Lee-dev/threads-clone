@@ -1,6 +1,52 @@
-import { Post } from "@/src/types";
+import { Post, PostUser } from "@/src/types";
+
+// wtlee 사용자 정보 (재사용)
+export const wtleeUser: PostUser = {
+  id: "wtlee",
+  name: "이우택",
+  profileImageUrl: "https://i.pravatar.cc/150?img=10",
+  isVerified: true,
+};
 
 export const dummyPosts: Post[] = [
+  // wtlee 사용자의 포스트
+  {
+    id: "wtlee_1",
+    user: wtleeUser,
+    content: "React Native와 Expo SDK 54로 Threads 클론 앱을 만들고 있습니다. 생각보다 재밌네요!",
+    timeAgo: "10분 전",
+    likes: 87,
+    comments: 12,
+    reposts: 5,
+  },
+  {
+    id: "wtlee_2",
+    user: wtleeUser,
+    content: "TypeScript의 Union Type은 정말 강력합니다. 타입 안전성을 확보하면서도 유연한 코드를 작성할 수 있어요.",
+    timeAgo: "2시간 전",
+    likes: 156,
+    comments: 28,
+    reposts: 19,
+  },
+  {
+    id: "wtlee_3",
+    user: wtleeUser,
+    content: "오늘의 개발 환경 세팅 완료! 새 맥북 프로 M3 Max 너무 빠르다",
+    timeAgo: "1일 전",
+    likes: 342,
+    comments: 45,
+    reposts: 8,
+    imageUrls: ["https://picsum.photos/400/300?random=10"],
+  },
+  {
+    id: "wtlee_4",
+    user: wtleeUser,
+    content: "Mirage.js로 목 서버 구축하니 프론트엔드 개발이 훨씬 수월해졌습니다. 백엔드 없이도 전체 플로우 테스트 가능!",
+    timeAgo: "2일 전",
+    likes: 98,
+    comments: 15,
+    reposts: 22,
+  },
   {
     id: "1",
     user: {
