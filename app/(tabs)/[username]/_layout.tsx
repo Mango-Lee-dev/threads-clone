@@ -2,23 +2,31 @@ import { useLocalSearchParams, withLayoutContext } from "expo-router";
 import {
   createMaterialTopTabNavigator,
   MaterialTopTabNavigationOptions,
+  MaterialTopTabNavigationEventMap,
 } from "@react-navigation/material-top-tabs";
 import { ParamListBase, TabNavigationState } from "@react-navigation/native";
-import { MaterialTopTabNavigationEventMap } from "@react-navigation/material-top-tabs";
 import {
   Image,
   Pressable,
-  Share,
   StyleSheet,
-  Text,
   useColorScheme,
   View,
+  ActivityIndicator,
+  Text,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { useContext, useEffect, useState } from "react";
+import { useContext, useState, useMemo } from "react";
 import { AuthContext } from "@/app/_layout";
 import { Ionicons } from "@expo/vector-icons";
 import SideMenu from "@/components/side-menu";
+import { useUserProfile } from "@/src/features/user";
+import {
+  ProfileHeader,
+  OwnProfileActions,
+  OtherProfileActions,
+  MoreOptionsModal,
+} from "@/src/modules/profile";
+
 const { Navigator } = createMaterialTopTabNavigator();
 
 export const MaterialTopTabs = withLayoutContext<
@@ -30,71 +38,81 @@ export const MaterialTopTabs = withLayoutContext<
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const isDark = colorScheme === "dark";
   const insets = useSafeAreaInsets();
   const [isSideMenuOpen, setIsSideMenuOpen] = useState(false);
+  const [isMoreModalOpen, setIsMoreModalOpen] = useState(false);
   const { user } = useContext(AuthContext);
-  const [isEditModalVisible, setIsEditModalVisible] = useState(false);
   const isLoggedIn = !!user;
-  const { username } = useLocalSearchParams();
-  const isOwnProfile = isLoggedIn && user?.id === username?.slice(1);
-  const [profile, setProfile] = useState<any>(null);
+  const { username } = useLocalSearchParams<{ username: string }>();
 
-  useEffect(() => {
-    if (!username) return;
+  // username에서 userId 추출 (@ 접두사 제거)
+  const userId = useMemo(() => {
+    if (!username) return "";
+    return username.startsWith("@") ? username.slice(1) : username;
+  }, [username]);
 
-    if (username !== `@${user?.id}`) {
-      setProfile(null);
-      fetch(`/users/${username}`)
-        .then((res) => res.json())
-        .then((data) => {
-          setProfile(data.user);
-        });
-    } else {
-      setProfile(user);
+  // 본인 프로필 여부 확인
+  const isOwnProfile = useMemo(() => {
+    return isLoggedIn && user?.id === userId;
+  }, [isLoggedIn, user?.id, userId]);
+
+  // 프로필 데이터 조회 (본인이 아닌 경우에만 API 호출)
+  const {
+    data: fetchedProfile,
+    isLoading,
+    isError,
+  } = useUserProfile(isOwnProfile ? "" : userId);
+
+  // 본인 프로필일 경우 AuthContext의 user 데이터 사용
+  const profile = useMemo(() => {
+    if (isOwnProfile && user) {
+      return {
+        ...user,
+        isVerified: true,
+        followersCount: 0,
+        followingCount: 0,
+        isFollowing: false,
+        isFollowedBy: false,
+        isMuted: false,
+        isBlocked: false,
+        isRestricted: false,
+      };
     }
-  }, [username, user]);
+    return fetchedProfile;
+  }, [isOwnProfile, user, fetchedProfile]);
 
-  const handleOpenEditModal = () => {
-    setIsEditModalVisible(true);
+  const handleMentionPress = () => {
+    // TODO: Navigate to compose with mention
   };
 
-  const handleCloseEditModal = () => setIsEditModalVisible(false);
-
-  const handleShareProfile = async () => {
-    try {
-      await Share.share({
-        message: `threads://@${username}`,
-        url: `threads://@${username}`,
-      });
-    } catch (error) {
-      console.log(error);
-    }
+  const handleMorePress = () => {
+    setIsMoreModalOpen(true);
   };
+
+  const handleFollowersPress = () => {
+    // TODO: Navigate to followers list
+  };
+
   return (
     <View
       style={[
         styles.container,
-        colorScheme === "dark" ? styles.containerDark : styles.containerLight,
+        isDark ? styles.containerDark : styles.containerLight,
         { paddingTop: insets.top, paddingBottom: insets.bottom },
       ]}
     >
-      <View
-        style={[
-          styles.header,
-          colorScheme === "dark" ? styles.headerDark : styles.headerLight,
-        ]}
-      >
+      {/* Header */}
+      <View style={[styles.header, isDark ? styles.headerDark : styles.headerLight]}>
         {isLoggedIn && (
           <Pressable
             style={styles.menuButton}
-            onPress={() => {
-              setIsSideMenuOpen(true);
-            }}
+            onPress={() => setIsSideMenuOpen(true)}
           >
             <Ionicons
               name="menu"
               size={24}
-              color={colorScheme === "dark" ? "gray" : "black"}
+              color={isDark ? "gray" : "black"}
             />
           </Pressable>
         )}
@@ -107,115 +125,42 @@ export default function TabLayout() {
           onClose={() => setIsSideMenuOpen(false)}
         />
       </View>
-      {profile && (
-        <View style={styles.profile}>
-          <View style={styles.profileHeader}>
-            <Image
-              source={{ uri: profile?.profileImageUrl }}
-              style={styles.profileAvatar}
-            />
-            <Text
-              style={[
-                styles.profileName,
-                colorScheme === "dark"
-                  ? styles.profileNameDark
-                  : styles.profileNameLight,
-              ]}
-            >
-              {profile?.name}
-            </Text>
-            <Text
-              style={[
-                { marginBottom: 16 },
-                colorScheme === "dark"
-                  ? styles.profileTextDark
-                  : styles.profileTextLight,
-              ]}
-            >
-              {profile?.id}
-            </Text>
-            <Text
-              style={[
-                colorScheme === "dark"
-                  ? styles.profileTextDark
-                  : styles.profileTextLight,
-              ]}
-            >
-              {profile?.description}
-            </Text>
-          </View>
-          <View style={styles.profileActions}>
-            {isOwnProfile ? (
-              <Pressable
-                style={[
-                  styles.actionButton,
-                  colorScheme === "dark"
-                    ? styles.actionButtonDark
-                    : styles.actionButtonLight,
-                ]}
-                onPress={handleOpenEditModal}
-              >
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    colorScheme === "dark"
-                      ? styles.actionButtonTextDark
-                      : styles.actionButtonTextLight,
-                  ]}
-                >
-                  Edit profile
-                </Text>
-              </Pressable>
-            ) : (
-              <Pressable
-                style={[
-                  styles.actionButton,
-                  colorScheme === "dark"
-                    ? styles.actionButtonDark
-                    : styles.actionButtonLight,
-                ]}
-              >
-                <Text
-                  style={[
-                    styles.actionButtonText,
-                    colorScheme === "dark"
-                      ? styles.actionButtonTextDark
-                      : styles.actionButtonTextLight,
-                  ]}
-                >
-                  Follow
-                </Text>
-              </Pressable>
-            )}
-            <Pressable
-              style={[
-                styles.actionButton,
-                colorScheme === "dark"
-                  ? styles.actionButtonDark
-                  : styles.actionButtonLight,
-              ]}
-              onPress={handleShareProfile}
-            >
-              <Text
-                style={[
-                  styles.actionButtonText,
-                  colorScheme === "dark"
-                    ? styles.actionButtonTextDark
-                    : styles.actionButtonTextLight,
-                ]}
-              >
-                Share profile
-              </Text>
-            </Pressable>
-          </View>
-        </View>
-      )}
 
+      {/* Profile Section */}
+      {isLoading && !isOwnProfile ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" />
+        </View>
+      ) : isError && !isOwnProfile ? (
+        <View style={styles.errorContainer}>
+          <Text style={[styles.errorText, isDark && styles.errorTextDark]}>
+            Failed to load profile
+          </Text>
+        </View>
+      ) : profile ? (
+        <View>
+          <ProfileHeader
+            profile={profile}
+            onFollowersPress={handleFollowersPress}
+          />
+          {isOwnProfile ? (
+            <OwnProfileActions profile={profile} />
+          ) : (
+            <OtherProfileActions
+              profile={profile}
+              onMentionPress={handleMentionPress}
+              onMorePress={handleMorePress}
+            />
+          )}
+        </View>
+      ) : null}
+
+      {/* Tabs */}
       <MaterialTopTabs
         screenOptions={{
           lazy: true,
           tabBarStyle: {
-            backgroundColor: colorScheme === "dark" ? "#101010" : "white",
+            backgroundColor: isDark ? "#101010" : "white",
             shadowColor: "transparent",
             position: "relative",
           },
@@ -224,13 +169,13 @@ export default function TabLayout() {
             fontWeight: "bold",
           },
           tabBarPressColor: "transparent",
-          tabBarActiveTintColor: colorScheme === "dark" ? "white" : "#555",
+          tabBarActiveTintColor: isDark ? "white" : "#555",
           tabBarIndicatorStyle: {
-            backgroundColor: colorScheme === "dark" ? "white" : "black",
+            backgroundColor: isDark ? "white" : "black",
             height: 1,
           },
           tabBarIndicatorContainerStyle: {
-            backgroundColor: colorScheme === "dark" ? "#aaa" : "#555",
+            backgroundColor: isDark ? "#aaa" : "#555",
             position: "absolute",
             top: 48,
             height: 1,
@@ -241,6 +186,15 @@ export default function TabLayout() {
         <MaterialTopTabs.Screen name="replies" options={{ title: "Replies" }} />
         <MaterialTopTabs.Screen name="reposts" options={{ title: "Reposts" }} />
       </MaterialTopTabs>
+
+      {/* More Options Modal */}
+      {profile && !isOwnProfile && (
+        <MoreOptionsModal
+          visible={isMoreModalOpen}
+          profile={profile}
+          onClose={() => setIsMoreModalOpen(false)}
+        />
+      )}
     </View>
   );
 }
@@ -248,6 +202,12 @@ export default function TabLayout() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+  },
+  containerLight: {
+    backgroundColor: "white",
+  },
+  containerDark: {
+    backgroundColor: "#101010",
   },
   header: {
     flexDirection: "row",
@@ -270,74 +230,19 @@ const styles = StyleSheet.create({
     position: "absolute",
     left: 16,
   },
-  profile: {
-    padding: 16,
-  },
-  profileHeader: {
-    flexDirection: "column",
-    alignItems: "flex-start",
-  },
-  profileAvatar: {
-    position: "absolute",
-    right: 0,
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  profileName: {
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  profileNameLight: {
-    color: "black",
-  },
-  profileNameDark: {
-    color: "white",
-  },
-  profileTextDark: {
-    color: "white",
-  },
-  profileTextLight: {
-    color: "black",
-  },
-  containerLight: {
-    backgroundColor: "white",
-  },
-  containerDark: {
-    backgroundColor: "#101010",
-  },
-  profileActions: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    marginTop: 16,
-    marginBottom: 16,
-  },
-  actionButton: {
-    flex: 1,
+  loadingContainer: {
+    padding: 40,
     alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    paddingVertical: 8,
-    marginHorizontal: 4,
   },
-  actionButtonLight: {
-    backgroundColor: "white",
-    borderWidth: 1,
-    borderColor: "#333",
+  errorContainer: {
+    padding: 40,
+    alignItems: "center",
   },
-  actionButtonDark: {
-    backgroundColor: "#101010",
-    borderWidth: 1,
-    borderColor: "#ccc",
+  errorText: {
+    fontSize: 16,
+    color: "#666",
   },
-  actionButtonText: {
-    fontSize: 14,
-    fontWeight: "600",
-  },
-  actionButtonTextLight: {
-    color: "#000",
-  },
-  actionButtonTextDark: {
-    color: "#fff",
+  errorTextDark: {
+    color: "#999",
   },
 });

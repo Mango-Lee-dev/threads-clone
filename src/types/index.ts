@@ -124,3 +124,24 @@ export interface UploadResponse {
   url: string;
   filename: string;
 }
+
+// User Profile 타입 (프로필 상세 정보)
+export interface UserProfile extends User {
+  isVerified: boolean;
+  followersCount: number;
+  followingCount: number;
+  isFollowing: boolean;
+  isFollowedBy: boolean;
+  isMuted: boolean;
+  isBlocked: boolean;
+  isRestricted: boolean;
+}
+
+// User Actions 타입
+export type UserActionType = "follow" | "unfollow" | "mute" | "unmute" | "block" | "unblock" | "restrict" | "unrestrict";
+
+export interface UserActionResponse {
+  success: boolean;
+  action: UserActionType;
+  userId: string;
+}
